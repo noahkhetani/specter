@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SPECTER</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #0F1923;
+      --bg2: #1A2634;
+      --bg3: #243447;
+      --red: #FF4655;
+      --red-dim: #cc3644;
+      --gold: #E2B862;
+      --gold-dim: #a07e3a;
+      --white: #FFFBF5;
+      --muted: #889AA4;
+      --green: #4CAF50;
+      --font: 'Segoe UI', Arial, sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      overflow: hidden;
+      font-family: var(--font);
+      color: var(--white);
+      user-select: none;
+    }
+
+    #game-canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      cursor: none;
+    }
+
+    /* ===================== SCREENS ===================== */
+    .screen {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+
+    .hidden { display: none !important; }
+
+    /* ===================== MAIN MENU ===================== */
+    #main-menu {
+      background: radial-gradient(ellipse at center, #1a2634 0%, #0a0f18 100%);
+      flex-direction: column;
+      gap: 0;
+    }
+
+    #main-menu .logo {
+      font-size: 96px;
+      font-weight: 900;
+      letter-spacing: 16px;
+      color: var(--white);
+      text-transform: uppercase;
+      position: relative;
+      margin-bottom: 4px;
+    }
+
+    #main-menu .logo span { color: var(--red); }
+
+    #main-menu .tagline {
+      font-size: 14px;
+      letter-spacing: 6px;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 60px;
+    }
+
+    #main-menu .menu-btn {
+      background: var(--red);
+      color: var(--white);
+      border: none;
+      padding: 16px 64px;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      cursor: pointer;
+      clip-path: polygon(12px 0%, 100% 0%, calc(100% - 12px) 100%, 0% 100%);
+      transition: background 0.15s;
+      margin: 8px 0;
+      min-width: 280px;
+    }
+
+    #main-menu .menu-btn:hover { background: #ff6070; }
+    #main-menu .menu-btn.secondary {
+      background: transparent;
+      border: 1px solid var(--muted);
+      color: var(--muted);
+    }
+    #main-menu .menu-btn.secondary:hover { border-color: var(--white); color: var(--white); }
+
+    #main-menu .version {
+      position: absolute;
+      bottom: 20px;
+      right: 24px;
+      font-size: 11px;
+      color: #445566;
+      letter-spacing: 2px;
+    }
+
+    /* ===================== AGENT SELECT ===================== */
+    #agent-select {
+      background: var(--bg);
+      flex-direction: column;
+      gap: 0;
+    }
+
+    #agent-select h2 {
+      font-size: 13px;
+      letter-spacing: 4px;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+
+    .agent-grid {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    .agent-card {
+      width: 120px;
+      height: 180px;
+      background: var(--bg2);
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px 8px 12px;
+      gap: 8px;
+      position: relative;
+      clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+    }
+
+    .agent-card:hover { border-color: var(--muted); background: var(--bg3); }
+    .agent-card.selected { border-color: var(--red); background: var(--bg3); }
+    .agent-card.selected::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--red);
+    }
+
+    .agent-card .agent-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      font-weight: 900;
+    }
+
+    .agent-card .agent-name {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .agent-card .agent-role {
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .agent-info {
+      display: flex;
+      gap: 24px;
+      align-items: flex-start;
+      background: var(--bg2);
+      padding: 24px;
+      min-width: 700px;
+      margin-bottom: 24px;
+    }
+
+    .agent-info .abilities {
+      display: flex;
+      gap: 12px;
+    }
+
+    .ability-chip {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      width: 70px;
+    }
+
+    .ability-chip .key {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: 1px;
+    }
+
+    .ability-chip .icon {
+      width: 44px;
+      height: 44px;
+      background: var(--bg3);
+      border: 1px solid var(--bg3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+
+    .ability-chip .name {
+      font-size: 9px;
+      color: var(--muted);
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    #confirm-agent {
+      background: var(--red);
+      border: none;
+      color: var(--white);
+      padding: 14px 48px;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      cursor: pointer;
+      clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
+      transition: background 0.15s;
+    }
+
+    #confirm-agent:hover { background: #ff6070; }
+
+    /* ===================== HUD ===================== */
+    #hud {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 50;
+    }
+
+    /* Crosshair */
+    #crosshair {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 6px;
+      height: 6px;
+    }
+
+    #crosshair::before,
+    #crosshair::after {
+      content: '';
+      position: absolute;
+      background: rgba(255, 255, 255, 0.9);
+    }
+
+    #crosshair::before {
+      width: 2px;
+      height: 14px;
+      top: -6px;
+      left: 2px;
+    }
+
+    #crosshair::after {
+      width: 14px;
+      height: 2px;
+      left: -4px;
+      top: 2px;
+    }
+
+    #crosshair .dot {
+      position: absolute;
+      width: 2px;
+      height: 2px;
+      background: var(--red);
+      top: 2px;
+      left: 2px;
+    }
+
+    #crosshair.spread::before { top: -14px; }
+    #crosshair.spread::after { left: -11px; }
+
+    /* ADS crosshair — tighter dot reticle when aiming non-sniper weapons */
+    #crosshair.ads::before { height: 8px; top: -3px; }
+    #crosshair.ads::after { width: 8px; left: -1px; }
+
+    /* ===================== SCOPE OVERLAY ===================== */
+    #scope-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      display: none;
+    }
+    #scope-overlay.active { display: block; }
+
+    #scope-overlay .scope-lens {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    /* Sniper — heavy black tube scope */
+    #scope-overlay.sniper .scope-lens {
+      width: 70vh;
+      height: 70vh;
+      box-shadow: 0 0 0 100vmax #000, inset 0 0 70px 24px rgba(0,0,0,0.85);
+      border: 5px solid #050505;
+    }
+    #scope-overlay.sniper .scope-line { background: rgba(0,0,0,0.85); }
+    #scope-overlay.sniper .scope-center { background: var(--red); }
+
+    /* Rifle — lighter combat optic ring */
+    #scope-overlay.rifle .scope-lens {
+      width: 92vh;
+      height: 92vh;
+      box-shadow: 0 0 0 100vmax rgba(0,0,0,0.5), inset 0 0 36px 10px rgba(0,0,0,0.45);
+      border: 2px solid rgba(0,0,0,0.65);
+    }
+    #scope-overlay.rifle .scope-line { background: rgba(0,0,0,0.5); }
+    #scope-overlay.rifle .scope-center { background: var(--red); }
+
+    /* Crosshair lines drawn across the lens */
+    #scope-overlay .scope-line-h {
+      position: absolute;
+      top: 50%; left: 0; right: 0;
+      height: 1px;
+      transform: translateY(-50%);
+    }
+    #scope-overlay .scope-line-v {
+      position: absolute;
+      left: 50%; top: 0; bottom: 0;
+      width: 1px;
+      transform: translateX(-50%);
+    }
+    #scope-overlay .scope-center {
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    /* Bottom Left - Health & Armor */
+    #health-panel {
+      position: absolute;
+      bottom: 28px;
+      left: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    #health-panel .hp-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    #hp-value {
+      font-size: 46px;
+      font-weight: 900;
+      line-height: 1;
+      color: var(--white);
+      min-width: 80px;
+    }
+
+    #hp-bar-wrap {
+      width: 120px;
+    }
+
+    #hp-bar-bg {
+      width: 100%;
+      height: 4px;
+      background: rgba(255,255,255,0.15);
+      margin-bottom: 2px;
+    }
+
+    #hp-bar {
+      height: 4px;
+      background: var(--green);
+      transition: width 0.15s, background 0.3s;
+    }
+
+    #hp-label {
+      font-size: 9px;
+      color: var(--muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    #armor-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #armor-icon { font-size: 14px; color: var(--gold); }
+    #armor-value { font-size: 18px; font-weight: 700; color: var(--gold); min-width: 40px; }
+    #armor-type { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+
+    /* Bottom Right - Ammo */
+    #ammo-panel {
+      position: absolute;
+      bottom: 28px;
+      right: 28px;
+      text-align: right;
+    }
+
+    #ammo-current {
+      font-size: 60px;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    #ammo-reserve {
+      font-size: 22px;
+      font-weight: 400;
+      color: var(--muted);
+    }
+
+    #weapon-name {
+      font-size: 11px;
+      letter-spacing: 3px;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+
+    #reload-indicator {
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: var(--gold);
+      text-transform: uppercase;
+    }
+
+    /* Bottom Center - Abilities */
+    #abilities-panel {
+      position: absolute;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+    }
+
+    .ability-slot {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .ability-slot .slot-icon {
+      width: 48px;
+      height: 48px;
+      background: rgba(10, 15, 25, 0.8);
+      border: 1px solid rgba(255,255,255,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      position: relative;
+    }
+
+    .ability-slot .slot-icon.on-cooldown::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+    }
+
+    .ability-slot .slot-charges {
+      font-size: 10px;
+      color: var(--gold);
+      font-weight: 700;
+    }
+
+    .ability-slot .slot-key {
+      font-size: 9px;
+      color: var(--muted);
+      letter-spacing: 1px;
+    }
+
+    .ability-slot.ult .slot-icon {
+      width: 56px;
+      height: 56px;
+      border-color: var(--gold);
+      font-size: 28px;
+    }
+
+    .ult-charge {
+      position: absolute;
+      bottom: 2px;
+      left: 2px;
+      right: 2px;
+      height: 3px;
+      background: rgba(255,255,255,0.15);
+    }
+
+    .ult-charge-fill {
+      height: 100%;
+      background: var(--gold);
+      transition: width 0.3s;
+    }
+
+    /* Spike carrier icon */
+    #spike-carrier-icon {
+      position: absolute;
+      bottom: 52px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 20px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    #spike-carrier-icon.active { opacity: 1; }
+
+    /* Top Center - Round info */
+    #round-panel {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    #score-display {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    #score-t { font-size: 28px; font-weight: 900; color: var(--red); }
+    #score-sep { font-size: 20px; color: var(--muted); }
+    #score-ct { font-size: 28px; font-weight: 900; color: #4A90D9; }
+
+    #round-timer {
+      font-size: 36px;
+      font-weight: 900;
+      color: var(--white);
+      font-variant-numeric: tabular-nums;
+    }
+
+    #round-timer.critical { color: var(--red); animation: pulse 0.5s infinite alternate; }
+    #round-timer.buy-phase { color: var(--gold); }
+
+    @keyframes pulse { from { opacity: 1; } to { opacity: 0.4; } }
+
+    #round-label {
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+
+    #phase-label {
+      font-size: 11px;
+      color: var(--gold);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+
+    /* Top Right - Kill Feed */
+    #kill-feed {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      align-items: flex-end;
+    }
+
+    .kill-entry {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(10, 15, 25, 0.75);
+      padding: 5px 10px;
+      font-size: 13px;
+      border-left: 2px solid transparent;
+      animation: fadeInRight 0.2s ease;
+    }
+
+    @keyframes fadeInRight {
+      from { opacity: 0; transform: translateX(20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .kill-entry.player-kill { border-left-color: var(--red); }
+    .kill-entry .killer { font-weight: 700; }
+    .kill-entry .weapon { color: var(--gold); font-size: 11px; }
+    .kill-entry .victim { color: var(--muted); }
+
+    /* Top Left - Credits */
+    #credits-display {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--gold);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    #credits-display::before {
+      content: '●';
+      font-size: 14px;
+      color: var(--gold-dim);
+    }
+
+    /* Minimap */
+    #minimap {
+      position: absolute;
+      top: 80px;
+      left: 20px;
+      width: 180px;
+      height: 180px;
+      background: rgba(10, 15, 25, 0.85);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    #minimap canvas { width: 100%; height: 100%; }
+
+    /* Spike HUD elements */
+    #spike-timer-panel {
+      position: absolute;
+      top: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    #spike-timer-panel.visible { opacity: 1; }
+    #spike-timer-panel .spike-icon { font-size: 24px; }
+    #spike-bar-wrap { width: 200px; height: 8px; background: rgba(255,255,255,0.15); }
+    #spike-bar { height: 100%; background: var(--red); transition: width 0.1s; }
+    #spike-time-text {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--red);
+      letter-spacing: 2px;
+    }
+
+    #plant-progress-panel {
+      position: absolute;
+      bottom: 140px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    #plant-progress-panel.visible { display: flex; }
+    #plant-progress-panel .action-label {
+      font-size: 13px;
+      color: var(--white);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+
+    #plant-bar-wrap { width: 240px; height: 6px; background: rgba(255,255,255,0.2); }
+    #plant-bar { height: 100%; background: var(--red); transition: width 0.05s; }
+
+    /* Interact prompt */
+    #interact-prompt {
+      position: absolute;
+      top: 55%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 13px;
+      color: var(--white);
+      background: rgba(10,15,25,0.75);
+      padding: 8px 20px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      display: none;
+    }
+
+    #interact-prompt.visible { display: block; }
+
+    /* Flash effect */
+    #flash-overlay {
+      position: fixed;
+      inset: 0;
+      background: white;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 200;
+      transition: opacity 0.05s;
+    }
+
+    /* Hit indicator */
+    #hit-indicator {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 8px;
+      height: 8px;
+      pointer-events: none;
+    }
+
+    #hit-indicator.active::before {
+      content: '';
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border: 2px solid var(--red);
+      border-radius: 50%;
+      top: -2px;
+      left: -2px;
+      animation: hitPulse 0.3s forwards;
+    }
+
+    @keyframes hitPulse {
+      from { transform: scale(0.5); opacity: 1; }
+      to { transform: scale(2); opacity: 0; }
+    }
+
+    /* Damage direction indicator */
+    .damage-dir {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      border: 2px solid var(--red);
+      border-radius: 50%;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* Death screen */
+    #death-screen {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 80;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+
+    #death-screen.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    #death-screen .you-died {
+      font-size: 48px;
+      font-weight: 900;
+      color: var(--red);
+      letter-spacing: 8px;
+      text-transform: uppercase;
+    }
+
+    #death-screen .killed-by {
+      font-size: 16px;
+      color: var(--muted);
+      letter-spacing: 2px;
+    }
+
+    #respawn-label {
+      font-size: 13px;
+      color: var(--muted);
+      letter-spacing: 2px;
+    }
+
+    /* Round end overlay */
+    #round-end {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 90;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s;
+    }
+
+    #round-end.active { opacity: 1; }
+
+    #round-end .result {
+      font-size: 64px;
+      font-weight: 900;
+      letter-spacing: 10px;
+      text-transform: uppercase;
+    }
+
+    #round-end .result.win { color: var(--green); }
+    #round-end .result.loss { color: var(--red); }
+    #round-end .result.draw { color: var(--gold); }
+    #round-end .reason { font-size: 16px; color: var(--muted); letter-spacing: 3px; margin-top: 8px; }
+    #round-end .bonus { font-size: 20px; color: var(--gold); margin-top: 12px; }
+
+    /* Game over */
+    #game-over {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      z-index: 150;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+
+    #game-over.active { display: flex; }
+
+    #game-over .final-result {
+      font-size: 80px;
+      font-weight: 900;
+      letter-spacing: 12px;
+    }
+
+    #game-over .final-result.victory { color: var(--gold); }
+    #game-over .final-result.defeat { color: var(--red); }
+
+    #game-over .final-score { font-size: 28px; color: var(--muted); letter-spacing: 4px; }
+
+    #game-over .play-again-btn {
+      margin-top: 24px;
+      background: var(--red);
+      border: none;
+      color: var(--white);
+      padding: 14px 48px;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      cursor: pointer;
+      clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
+      pointer-events: auto;
+    }
+
+    /* ===================== BUY MENU ===================== */
+    #buy-menu {
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 10, 18, 0.92);
+      z-index: 60;
+      display: none;
+      padding: 40px;
+      gap: 24px;
+      flex-direction: column;
+    }
+
+    #buy-menu.open { display: flex; }
+
+    #buy-menu .buy-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    #buy-menu .buy-title {
+      font-size: 14px;
+      letter-spacing: 4px;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    #buy-menu .buy-credits {
+      font-size: 28px;
+      font-weight: 900;
+      color: var(--gold);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #buy-menu .buy-body {
+      display: flex;
+      gap: 24px;
+      flex: 1;
+    }
+
+    .buy-categories {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 140px;
+    }
+
+    .buy-cat-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--muted);
+      padding: 10px 16px;
+      text-align: left;
+      font-size: 12px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.1s;
+    }
+
+    .buy-cat-btn:hover { color: var(--white); border-color: var(--bg3); }
+    .buy-cat-btn.active { color: var(--white); border-color: var(--red); background: rgba(255,70,85,0.1); }
+
+    .buy-items {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, 160px);
+      grid-auto-rows: 120px;
+      gap: 8px;
+      align-content: start;
+      overflow-y: auto;
+    }
+
+    .buy-item {
+      background: var(--bg2);
+      border: 1px solid var(--bg3);
+      cursor: pointer;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.1s;
+      position: relative;
+    }
+
+    .buy-item:hover { border-color: var(--muted); background: var(--bg3); }
+    .buy-item.selected { border-color: var(--red); }
+    .buy-item.owned { border-color: var(--green); }
+    .buy-item.cant-afford { opacity: 0.4; cursor: not-allowed; }
+
+    .buy-item .item-name {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .buy-item .item-category {
+      font-size: 9px;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .buy-item .item-icon {
+      font-size: 28px;
+      text-align: center;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .buy-item .item-price {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--gold);
+    }
+
+    .buy-item .item-price.free { color: var(--green); }
+
+    .buy-detail {
+      min-width: 260px;
+      background: var(--bg2);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .buy-detail .detail-name {
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .buy-detail .detail-stats {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .stat-row .stat-label {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .stat-row .stat-bar {
+      width: 80px;
+      height: 4px;
+      background: rgba(255,255,255,0.1);
+    }
+
+    .stat-row .stat-fill { height: 100%; background: var(--red); }
+
+    .buy-confirm-btn {
+      background: var(--red);
+      border: none;
+      color: var(--white);
+      padding: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+      width: 100%;
+      margin-top: auto;
+    }
+
+    .buy-confirm-btn:hover { background: #ff6070; }
+    .buy-confirm-btn:disabled { background: var(--bg3); color: var(--muted); cursor: not-allowed; }
+
+    .buy-help {
+      font-size: 11px;
+      color: var(--muted);
+      text-align: center;
+      letter-spacing: 1px;
+    }
+
+    /* ===================== SCOREBOARD ===================== */
+    #scoreboard {
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 10, 18, 0.92);
+      z-index: 70;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      padding: 60px 40px;
+      gap: 20px;
+    }
+
+    #scoreboard.open { display: flex; }
+
+    #scoreboard .sb-header {
+      font-size: 13px;
+      letter-spacing: 4px;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    #scoreboard .sb-score {
+      font-size: 48px;
+      font-weight: 900;
+    }
+
+    .sb-team {
+      width: 100%;
+      max-width: 900px;
+    }
+
+    .sb-team-header {
+      padding: 8px 16px;
+      font-size: 11px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .sb-team-header.attack { background: rgba(255, 70, 85, 0.2); color: var(--red); }
+    .sb-team-header.defend { background: rgba(74, 144, 217, 0.2); color: #4A90D9; }
+
+    .sb-player-row {
+      display: grid;
+      grid-template-columns: 180px 1fr 60px 60px 60px 80px;
+      padding: 8px 16px;
+      font-size: 13px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      align-items: center;
+    }
+
+    .sb-player-row.header {
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .sb-player-row .agent-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sb-player-row .kda { text-align: center; }
+    .sb-player-row .kda .k { color: var(--white); }
+    .sb-player-row .kda .slash { color: var(--muted); }
+    .sb-player-row .kda .d { color: var(--red); }
+    .sb-player-row .kda .a { color: var(--muted); }
+
+    .sb-player-row .credits-col { color: var(--gold); font-weight: 700; }
+    .sb-player-row.is-player { background: rgba(255, 70, 85, 0.08); }
+
+    /* Notification */
+    #notification {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--white);
+      text-shadow: 0 0 20px rgba(0,0,0,0.8);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 110;
+      text-align: center;
+    }
+
+    #notification.show { opacity: 1; }
+
+    /* Lock crosshair when pointer locked */
+    .pointer-locked #crosshair { display: block; }
+
+    /* Loading */
+    #loading-screen {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    #loading-screen .load-title {
+      font-size: 72px;
+      font-weight: 900;
+      letter-spacing: 12px;
+      color: var(--red);
+    }
+
+    #loading-screen .load-bar-wrap {
+      width: 320px;
+      height: 3px;
+      background: var(--bg2);
+    }
+
+    #load-bar { height: 100%; background: var(--red); width: 0; transition: width 0.3s; }
+    #load-text { font-size: 11px; color: var(--muted); letter-spacing: 3px; }
+
+    /* Spike plant site indicator */
+    #site-indicator {
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 80px;
+      font-weight: 900;
+      color: rgba(255, 70, 85, 0.15);
+      pointer-events: none;
+      letter-spacing: 20px;
+    }
+
+    /* Weapons list HUD (1-5 keys) */
+    #weapon-slots {
+      position: absolute;
+      bottom: 90px;
+      right: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      align-items: flex-end;
+    }
+
+    .weapon-slot-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 4px 8px;
+      background: rgba(10,15,25,0.6);
+      border-left: 2px solid transparent;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .weapon-slot-item.active {
+      border-left-color: var(--red);
+      color: var(--white);
+      background: rgba(255,70,85,0.1);
+    }
+
+    .weapon-slot-num {
+      font-size: 10px;
+      color: var(--muted);
+      width: 12px;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="game-canvas"></canvas>
+
+  <!-- Loading Screen -->
+  <div id="loading-screen">
+    <div class="load-title">SPECTER</div>
+    <div class="load-bar-wrap"><div id="load-bar"></div></div>
+    <div id="load-text">INITIALIZING...</div>
+  </div>
+
+  <!-- Main Menu -->
+  <div id="main-menu" class="screen hidden">
+    <div class="logo">SP<span>E</span>CTER</div>
+    <div class="tagline">Every Shadow Has a Price</div>
+    <button class="menu-btn" id="btn-play">Play</button>
+    <button class="menu-btn secondary" id="btn-training">Practice Range</button>
+    <div class="version">v1.0.0 — SPECTER</div>
+  </div>
+
+  <!-- Agent Select -->
+  <div id="agent-select" class="screen hidden">
+    <h2>Select Your Agent</h2>
+    <div class="agent-grid" id="agent-grid"></div>
+    <div class="agent-info" id="agent-info">
+      <div style="flex:1">
+        <div id="selected-agent-name" style="font-size:28px;font-weight:900;letter-spacing:3px;margin-bottom:4px;"></div>
+        <div id="selected-agent-role" style="font-size:11px;color:var(--muted);letter-spacing:3px;text-transform:uppercase;margin-bottom:16px;"></div>
+        <div id="selected-agent-desc" style="font-size:13px;color:var(--muted);line-height:1.6;max-width:320px;"></div>
+      </div>
+      <div class="abilities" id="ability-preview"></div>
+    </div>
+    <button id="confirm-agent">Lock In</button>
+  </div>
+
+  <!-- HUD -->
+  <div id="hud" class="hidden">
+    <!-- Crosshair -->
+    <div id="crosshair"><div class="dot"></div></div>
+
+    <!-- Scope overlay (snipers + rifles) -->
+    <div id="scope-overlay">
+      <div class="scope-lens"></div>
+      <div class="scope-line scope-line-h"></div>
+      <div class="scope-line scope-line-v"></div>
+      <div class="scope-center"></div>
+    </div>
+
+    <!-- Health -->
+    <div id="health-panel">
+      <div class="hp-row">
+        <div id="hp-value">100</div>
+        <div id="hp-bar-wrap">
+          <div id="hp-bar-bg"><div id="hp-bar" style="width:100%"></div></div>
+          <div id="hp-label">Health</div>
+        </div>
+      </div>
+      <div id="armor-row">
+        <div id="armor-icon">🛡</div>
+        <div id="armor-value">0</div>
+        <div id="armor-type">No Shield</div>
+      </div>
+    </div>
+
+    <!-- Ammo -->
+    <div id="ammo-panel">
+      <div id="ammo-current">30</div>/<span id="ammo-reserve">90</span>
+      <div id="weapon-name">PHANTOM</div>
+      <div id="reload-indicator"></div>
+    </div>
+
+    <!-- Weapon Slots -->
+    <div id="weapon-slots"></div>
+
+    <!-- Abilities -->
+    <div id="abilities-panel">
+      <div class="ability-slot" id="slot-c">
+        <div class="slot-icon" id="ability-c-icon">💨</div>
+        <div class="slot-charges" id="ability-c-charges">1</div>
+        <div class="slot-key">C</div>
+      </div>
+      <div class="ability-slot" id="slot-q">
+        <div class="slot-icon" id="ability-q-icon">🌀</div>
+        <div class="slot-charges" id="ability-q-charges">1</div>
+        <div class="slot-key">Q</div>
+      </div>
+      <div class="ability-slot" id="slot-e">
+        <div class="slot-icon" id="ability-e-icon">⚡</div>
+        <div class="slot-charges" id="ability-e-charges">1</div>
+        <div class="slot-key">E</div>
+      </div>
+      <div class="ability-slot ult" id="slot-x">
+        <div class="slot-icon" id="ability-x-icon">
+          ★
+          <div class="ult-charge"><div class="ult-charge-fill" id="ult-fill" style="width:0%"></div></div>
+        </div>
+        <div class="slot-charges" id="ability-x-charges">0/7</div>
+        <div class="slot-key">X</div>
+      </div>
+    </div>
+
+    <!-- Spike carrier -->
+    <div id="spike-carrier-icon">💣 SPIKE</div>
+
+    <!-- Round panel -->
+    <div id="round-panel">
+      <div id="score-display">
+        <div id="score-t">0</div>
+        <div id="score-sep">:</div>
+        <div id="score-ct">0</div>
+      </div>
+      <div id="round-timer">1:40</div>
+      <div id="round-label">ROUND 1</div>
+      <div id="phase-label"></div>
+    </div>
+
+    <!-- Kill feed -->
+    <div id="kill-feed"></div>
+
+    <!-- Credits -->
+    <div id="credits-display">800</div>
+
+    <!-- Minimap -->
+    <div id="minimap"><canvas id="minimap-canvas" width="180" height="180"></canvas></div>
+
+    <!-- Spike timer (after plant) -->
+    <div id="spike-timer-panel">
+      <div class="spike-icon">💣</div>
+      <div id="spike-bar-wrap"><div id="spike-bar" style="width:100%"></div></div>
+      <div id="spike-time-text">0:45</div>
+    </div>
+
+    <!-- Plant/defuse progress -->
+    <div id="plant-progress-panel">
+      <div class="action-label" id="plant-action-label">PLANTING</div>
+      <div id="plant-bar-wrap"><div id="plant-bar" style="width:0%"></div></div>
+    </div>
+
+    <!-- Interact prompt -->
+    <div id="interact-prompt"></div>
+
+    <!-- Site indicator -->
+    <div id="site-indicator"></div>
+
+    <!-- Flash -->
+    <div id="flash-overlay"></div>
+
+    <!-- Hit indicator -->
+    <div id="hit-indicator"></div>
+
+    <!-- Death screen -->
+    <div id="death-screen">
+      <div class="you-died">YOU DIED</div>
+      <div class="killed-by" id="killed-by-text"></div>
+      <div id="respawn-label">Waiting for next round...</div>
+    </div>
+
+    <!-- Round end -->
+    <div id="round-end">
+      <div class="result" id="round-result">VICTORY</div>
+      <div class="reason" id="round-reason"></div>
+      <div class="bonus" id="round-bonus"></div>
+    </div>
+
+    <!-- Notification -->
+    <div id="notification"></div>
+  </div>
+
+  <!-- Buy Menu -->
+  <div id="buy-menu">
+    <div class="buy-header">
+      <div class="buy-title">Arsenal — Buy Phase</div>
+      <div class="buy-credits">● <span id="buy-credits-val">800</span> credits</div>
+    </div>
+    <div class="buy-body">
+      <div class="buy-categories" id="buy-categories"></div>
+      <div class="buy-items" id="buy-items"></div>
+      <div class="buy-detail" id="buy-detail">
+        <div class="detail-name" id="detail-name">Select a weapon</div>
+        <div class="detail-stats" id="detail-stats"></div>
+        <div style="margin-top:auto">
+          <button class="buy-confirm-btn" id="buy-confirm-btn" disabled>Buy</button>
+          <div class="buy-help" style="margin-top:8px;">B — Open/Close &nbsp;|&nbsp; ESC — Close</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scoreboard -->
+  <div id="scoreboard">
+    <div class="sb-header">Match Scoreboard</div>
+    <div class="sb-score" id="sb-score"></div>
+    <div id="sb-body"></div>
+  </div>
+
+  <!-- Game Over -->
+  <div id="game-over">
+    <div class="final-result" id="final-result">VICTORY</div>
+    <div class="final-score" id="final-score"></div>
+    <button class="play-again-btn" id="play-again-btn">Play Again</button>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

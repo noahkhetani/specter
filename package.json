@@ -1,0 +1,17 @@
+{
+  "name": "specter",
+  "version": "1.0.0",
+  "description": "SPECTER — Tactical 3D Shooter. Every shadow has a price.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "three": "^0.161.0"
+  },
+  "devDependencies": {
+    "vite": "^5.0.8"
+  }
+}
