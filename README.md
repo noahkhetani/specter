@@ -3,6 +3,10 @@
 **A tactical 5v5 first-person shooter built from scratch in Three.js.**
 *Every shadow has a price.*
 
+### ▶ [**Play it live**](https://noahkhetani.github.io/specter/)
+
+> Runs entirely in your browser — click to lock the mouse, pick an agent, and Lock In.
+
 SPECTER is an original, browser-based tactical shooter inspired by the round-based, ability-driven competitive FPS genre. Attackers must plant the Spike; defenders must stop them. Buy your loadout each round, use your agent's abilities to take space, and aim for first to 13.
 
 ---
